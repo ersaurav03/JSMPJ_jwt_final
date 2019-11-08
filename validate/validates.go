@@ -1,11 +1,10 @@
 package validate
 
 import (
-	"crypto/rsa"
+	"JSMPJ_jwt_final/keyinit"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -13,34 +12,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 )
-
-const (
-	privKeyPath = "app.rsa"
-	pubKeyPath  = "app.rsa.pub"
-)
-
-var (
-	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
-)
-var VerifyKey, SignKey []byte
-
-func InitKeys() {
-	var err error
-	SignKey, err = ioutil.ReadFile(privKeyPath)
-	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(SignKey)
-	if err != nil {
-		log.Fatal("Error reading private key")
-		return
-	}
-
-	VerifyKey, err = ioutil.ReadFile(pubKeyPath)
-	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(VerifyKey)
-	if err != nil {
-		log.Fatal("Error reading public key")
-		return
-	}
-}
 
 //STRUCT DEFINITIONS
 
@@ -60,21 +31,8 @@ type Response struct {
 	Data string `json:"data"`
 }
 
-type Token struct {
-	Token string `json:"token"`
-}
-
-var jwtToken string
-
-type claimsst struct {
-	Name     string `json:"username"`
-	Password string `json:"password"`
-	// Role string `json:"role"`
-	jwt.StandardClaims
-}
-
 func Validate(w http.ResponseWriter, r *http.Request) {
-	status, err := ValidateJWTToken(jwtToken)
+	status, err := ValidateJWTToken(keyinit.JwtToken)
 	if status == true && err == nil {
 		response := Response{"Gained access to protected resource"}
 		JsonResponse(response, w)
@@ -84,7 +42,7 @@ func Validate(w http.ResponseWriter, r *http.Request) {
 }
 
 func Check(w http.ResponseWriter, r *http.Request) {
-	status, err := ValidateJWTToken(jwtToken)
+	status, err := ValidateJWTToken(keyinit.JwtToken)
 	if status == true && err == nil {
 		response := Response{"Gained access to protected resource in check"}
 		JsonResponse(response, w)
@@ -104,14 +62,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(user.Username, user.Password)
-	if strings.ToLower(user.Username) != "alexcons" || user.Password != "kappa123" {
+	if strings.ToLower(user.Username) != "saurav" && user.Password != "saurav123#" {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Println("Error logging in")
 		fmt.Fprint(w, "Invalid credentials")
 		return
 	}
 
-	claims := claimsst{
+	claims := keyinit.Claimsst{
 		Name:     user.Username,
 		Password: user.Password,
 		StandardClaims: jwt.StandardClaims{
@@ -123,7 +81,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	fmt.Println("Token is", token)
-	tokenString, err := token.SignedString(signKey)
+	tokenString, err := token.SignedString(keyinit.SignKeys)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -139,16 +97,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(5 * time.Minute),
 	})
 
-	jwtToken = tokenString
-	response := Token{tokenString}
+	keyinit.JwtToken = tokenString
+	response := keyinit.Token{tokenString}
 	JsonResponse(response, w)
 }
 func ValidateJWTToken(jwtToken string) (bool, error) {
-	token, err := jwt.ParseWithClaims(jwtToken, &claimsst{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(jwtToken, &keyinit.Claimsst{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
-		return verifyKey, nil
+		return keyinit.VerifyKeys, nil
 	})
 
 	//Malformed token,
@@ -156,7 +114,7 @@ func ValidateJWTToken(jwtToken string) (bool, error) {
 		return false, errors.New("Token is not valid")
 	}
 
-	claim, ok := token.Claims.(*claimsst)
+	claim, ok := token.Claims.(*keyinit.Claimsst)
 	if !ok {
 		fmt.Printf("%v %v %v\n", claim.Name, claim.StandardClaims.ExpiresAt, claim.Issuer)
 		return false, errors.New("Invalid JWT Token Claim")

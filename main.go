@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"JSMPJ_jwt_final/keyinit"
+
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
@@ -23,6 +25,6 @@ func StartServer() {
 	log.Fatal(http.ListenAndServe(":8001", handlers.CORS(origins, methods, headers)(newRouter)))
 }
 func main() {
-	validate.InitKeys()
+	keyinit.InitKeys()
 	StartServer()
 }
