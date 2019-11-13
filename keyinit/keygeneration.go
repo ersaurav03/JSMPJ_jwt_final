@@ -4,7 +4,6 @@ import (
 	"crypto/rsa"
 	"io/ioutil"
 	"log"
-
 	"github.com/dgrijalva/jwt-go"
 )
 

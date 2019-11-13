@@ -11,7 +11,7 @@ var JwtAuthentication = func(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// fmt.Println("We are in middle ware", validate.Names)
-		notAuth := map[string]bool{"/login": true, "/account/verify/uid": true, "/account/user": true}
+		notAuth := map[string]bool{"/login": true, "/sawdetails": true, "/account/user": true}
 		if !notAuth[r.URL.Path] {
 			if !VerifyToken(r) {
 				w.WriteHeader(http.StatusBadRequest)

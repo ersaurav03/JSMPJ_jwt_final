@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"JSMPJ_jwt_final/keyinit"
+	"JSMPJ_jwt_final/models"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -17,7 +18,8 @@ func StartServer() {
 	origins := handlers.AllowedOrigins([]string{"*"})
 	headers := handlers.AllowedHeaders([]string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"})
 	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
-	newRouter.HandleFunc("/login", validate.LoginHandler).Methods("POST")
+	newRouter.HandleFunc("/login", models.LoginHandler).Methods("POST")
+	newRouter.HandleFunc("/sawdetails", models.SawDetail).Methods("GET")
 	newRouter.HandleFunc("/resource/", validate.Validate).Methods("GET")
 	newRouter.HandleFunc("/check/", validate.Check).Methods("GET")
 	newRouter.Use(app.JwtAuthentication)
@@ -26,5 +28,6 @@ func StartServer() {
 }
 func main() {
 	keyinit.InitKeys()
+	models.DBinit()
 	StartServer()
 }

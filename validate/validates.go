@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+
 	"net/http"
-	"strings"
+
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
-
-//STRUCT DEFINITIONS
 
 type UserCredentials struct {
 	Username string `json:"username"`
@@ -52,55 +50,6 @@ func Check(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var user UserCredentials
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprintf(w, "Error in request")
-		return
-	}
-
-	fmt.Println(user.Username, user.Password)
-	if strings.ToLower(user.Username) != "saurav" && user.Password != "saurav123#" {
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Println("Error logging in")
-		fmt.Fprint(w, "Invalid credentials")
-		return
-	}
-
-	claims := keyinit.Claimsst{
-		Name:     user.Username,
-		Password: user.Password,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 30).Unix(),
-			IssuedAt:  time.Now().Unix(),
-			Issuer:    "JSMPJ-Corporation",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	fmt.Println("Token is", token)
-	tokenString, err := token.SignedString(keyinit.SignKeys)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Error while signing the token")
-		log.Printf("Error signing token: %v\n", err)
-	}
-
-	fmt.Println("Token String is ", tokenString)
-
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: time.Now().Add(5 * time.Minute),
-	})
-
-	keyinit.JwtToken = tokenString
-	response := keyinit.Token{tokenString}
-	JsonResponse(response, w)
-}
 func ValidateJWTToken(jwtToken string) (bool, error) {
 	token, err := jwt.ParseWithClaims(jwtToken, &keyinit.Claimsst{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
